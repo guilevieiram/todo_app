@@ -1,7 +1,7 @@
 from kivymd.app import MDApp
 
 from screen import Screen
-from task_manager import TaskManagerCloud, TaskManagerLocal
+from task_manager import TaskManagerCloud, TaskManagerLocal, TaskManager
 
 ## CONSTANTS
 
@@ -12,12 +12,10 @@ SECONDARY_COLOR = 'Pink'
 
 class ToDoApp(MDApp):
 
-    def __init__(self, cloud: bool):
+    def __init__(self, task_manager: TaskManager):
         super().__init__()
-        if cloud:
-            self.task_manager = TaskManagerCloud()
-        else:
-            self.task_manager = TaskManagerCloud()
+
+        self.task_manager = task_manager
 
         self.screen: Screen
 
@@ -78,7 +76,7 @@ class ToDoApp(MDApp):
         self.task_manager.show_tasks()
 
 def main() -> None:
-    app = ToDoApp(cloud=True)
+    app = ToDoApp(task_manager=TaskManagerCloud())
     app.run()
     app.exit_and_save()
 
