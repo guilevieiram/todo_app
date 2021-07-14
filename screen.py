@@ -10,7 +10,7 @@ from kivymd.uix.menu import MDDropdownMenu
 from kivy.metrics import dp
 
 # Logo
-LOGO_SOURCE = 'cat.png'
+LOGO_SOURCE = 'graphics/cat.png'
 LOGO_POSITION = {'center_x': .1, 'center_y': 0.8}
 LOGO_SIZE = {'width': 50, 'height': 50}
 
@@ -47,27 +47,30 @@ MENU = 'menu'
 CAT_TASK = 'Feed the cat'
 
 class ItemList(ScrollView):
-    def __init__(self, position: dict, validate_task_function, delete_task_function, **kwargs):
+
+    def __init__(self, position: dict, **kwargs):
         super().__init__()
+
         self.pos_hint = position
-        self.validate_task_function = validate_task_function
-        self.delete_task_function = delete_task_function
+        self.validate_task_function = kwargs['validate_task_function']
+        self.delete_task_function = kwargs['delete_task_function']
+
         self.create_list()
 
     def add_item(self, text: str, box_icon: str, delete_icon: str) -> None:
+
         item = OneLineAvatarIconListItem(text=text)
         box_icon = IconLeftWidget(icon=box_icon)
         delete_icon = IconRightWidget(icon=delete_icon)
+
         item.add_widget(box_icon)
         item.add_widget(delete_icon)
 
         delete_icon.on_press = lambda: self.delete_task_function(description=text)
-
         box_icon.on_press = lambda: self.validate_task_function(description=text)
         item.on_press = lambda: self.validate_task_function(description=text)
 
         self.list.add_widget(item)
-
 
     def create_list(self) -> None:
         self.list = MDList()
@@ -84,11 +87,10 @@ class ItemList(ScrollView):
 
 class Screen():
 
-    def __init__(self, theme):
+    def __init__(self):
         self.screen: MDScreen = MDScreen()
 
-        self.theme = theme
-
+        # Screen Widgets
         self.menu: MDDropdownMenu 
         self.toolbar: MDToolbar 
         self.logo: Image 
@@ -96,35 +98,50 @@ class Screen():
         self.add_task_button: MDFillRoundFlatButton
         self.task_list: ItemList
 
-    def add_functions(self, add_task_function, validate_task_function, delete_task_function, clear_tasks_function, menu_functions_list):
-        self.add_task_function = add_task_function
-        self.validate_task_function = validate_task_function
-        self.delete_task_function = delete_task_function
-        self.clear_tasks_function = clear_tasks_function
-        self.menu_functions_list = menu_functions_list
+    # Returning the MDScreen object
+    def get_screen(self) -> MDScreen:
+        return self.screen
+
+    # Making the widgets
+    def initilize_widgets(self, **kwargs):
+        self.add_task_function = kwargs['add_task_function']
+        self.validate_task_function = kwargs['validate_task_function']
+        self.delete_task_function = kwargs['delete_task_function']
+        self.clear_tasks_function = kwargs['clear_tasks_function']
+        self.menu_functions_list = kwargs['menu_functions_list']
+
+        self.create_widgets()
 
     def create_widgets(self) -> None:
         self.toolbar = self.create_toolbar()
         self.logo = self.create_logo()
         self.input = self.create_input_field()
         self.add_task_button = self.create_add_task_button()
-        self.task_list = self.create_task_list(
-            validate_task_function=self.validate_task_function,
-            delete_task_function=self.delete_task_function
-            )
+        self.task_list = self.create_task_list()
         self.menu  = self.create_menu()
 
         self.add_widgets()
 
+    def add_widgets(self) -> None:
+        self.screen.add_widget(self.toolbar)
+        self.screen.add_widget(self.logo)
+        self.screen.add_widget(self.input)
+        self.screen.add_widget(self.add_task_button)
+        self.screen.add_widget(self.task_list)
+
     def create_toolbar(self) -> MDToolbar:
+
+        def menu_callback(button):
+            self.menu.caller = button
+            self.menu.open()
+
         toolbar =  MDToolbar(
             title=TOOLBAR_TITLE,
             pos_hint=TOOLBAR_POSITION,
             )
-
-        toolbar.left_action_items = [[MENU, lambda x: self.menu_callback(x)]]
+        
+        toolbar.left_action_items = [[MENU, lambda x: menu_callback(x)]]
         toolbar.right_action_items = [['cat', lambda x: self.add_task_function(CAT_TASK)]]
-
         return toolbar
 
     def create_logo(self) -> Image:
@@ -155,11 +172,11 @@ class Screen():
             on_press=lambda x: self.add_task_action()
             )
 
-    def create_task_list(self, validate_task_function, delete_task_function) -> ItemList:
+    def create_task_list(self) -> ItemList:
         return ItemList(
             position=TASK_LIST_POSITION, 
-            validate_task_function=validate_task_function,
-            delete_task_function=delete_task_function
+            validate_task_function=self.validate_task_function,
+            delete_task_function=self.delete_task_function
             )
 
     def create_menu(self) -> MDDropdownMenu:
@@ -182,16 +199,7 @@ class Screen():
             width_mult=4,
         )
 
-    def add_widgets(self) -> None:
-        self.screen.add_widget(self.toolbar)
-        self.screen.add_widget(self.logo)
-        self.screen.add_widget(self.input)
-        self.screen.add_widget(self.add_task_button)
-        self.screen.add_widget(self.task_list)
-
-    def get_screen(self) -> MDScreen:
-        return self.screen
-
+    # Screen <-> TaskList interface
     def add_task_action(self) -> None:
         self.add_task_function(self.input.text)
         self.input.text = ''
@@ -199,13 +207,10 @@ class Screen():
     def add_task_list(self, tasks: dict) -> None:
         descriptions = tasks['description']
         done_tags = tasks['done']
-
-        icons = []
-        for done_tag in done_tags:
-            if done_tag: icons.append(FIILED_CHECKBOX)
-            else: icons.append(BLANK_CHECKBOX) 
+        icons = [FIILED_CHECKBOX if done_tag else BLANK_CHECKBOX for done_tag in done_tags]
 
         self.task_list.create_list()
+
         for description, icon in zip(descriptions, icons):
             self.task_list.add_item(text=description, box_icon=icon, delete_icon=DELETE_ICON)
 
@@ -217,8 +222,3 @@ class Screen():
     def reset_task_list(self, tasks: dict) -> None:
         self.delete_task_list()
         self.add_task_list(tasks=tasks)
-
-    def menu_callback(self, button):
-        self.menu.caller = button
-        self.menu.open()
-

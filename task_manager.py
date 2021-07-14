@@ -1,12 +1,147 @@
+import psycopg2
 import pandas as pd
+from abc import ABC, abstractmethod
 
 # Data
+TABLE_NAME = 'tasks'
 CSV_DATA_FILE = 'data.csv'
+POSTGRESQL_CONFIG = {
+        'user': 'klqyvsofizsjcb',
+        'password': 'b6ef78f91f8e3be4f5861c490efe52d99d6c1c1cb3c472839a90bf73db9704a7',
+        'host': 'ec2-54-157-100-65.compute-1.amazonaws.com',
+        'port': 5432,
+        'database': 'd8pld4q9k569uv'
+        }
+
+
+
 # Tasks
 TASK_ATTRIBUTES = ['description', 'done']
 STANDARD_TASK = {'description': '', 'done': False}
 
-class TaskManager():
+class TaskManager(ABC):
+
+    @abstractmethod
+    def add_task(self, description: str) -> None:
+        pass
+    
+    @abstractmethod
+    def validate_task(self, description: str) -> None:
+        pass
+    
+    @abstractmethod
+    def show_tasks(self, done: bool = True, undone: bool = True):
+        pass
+    
+    @abstractmethod
+    def get_tasks(self) -> dict:
+        pass
+    
+    @abstractmethod
+    def save_tasks(self) -> None:
+        pass
+    
+    @abstractmethod
+    def delete_task(self, description: str) -> None:
+        pass
+    
+    @abstractmethod
+    def clear_tasks(self) -> None:
+        pass
+    
+    @abstractmethod
+    def set_all_tasks(self, state: bool) -> None:
+        pass
+
+class TaskManagerCloud(TaskManager):
+
+    def __init__(self):
+        self.configurations = POSTGRESQL_CONFIG
+        self.table_name = TABLE_NAME
+        self.connection: psycopg2.connect
+        self.connect_to_db()
+        self.create_table()
+
+    def add_task(self, description: str) -> None:
+        if not description == '':
+            task = STANDARD_TASK
+            task['description'] = description
+
+            cursor = self.connection.cursor()
+            sql = f"INSERT INTO {self.table_name} VALUES ('{task['description']}', {task['done']})"
+            cursor.execute(sql)
+            self.connection.commit()
+
+    def validate_task(self, description: str) -> None:
+        cursor = self.connection.cursor()
+        sql = f"UPDATE {self.table_name} SET done = NOT done WHERE description = '{description}'"
+        cursor.execute(sql)
+        self.connection.commit()
+
+    def show_tasks(self):
+        cursor = self.connection.cursor()
+        sql = f"SELECT * FROM {self.table_name}"
+        cursor.execute(sql)
+        print(cursor.fetchall())
+
+    def get_tasks(self) -> dict:
+        cursor = self.connection.cursor()
+        sql = f"SELECT description, done FROM {self.table_name}"
+        cursor.execute(sql)
+        list_of_attributes = cursor.fetchall()
+        return {
+        'description': [element[0] for element in list_of_attributes][::-1],
+        'done': [element[1] for element in list_of_attributes][::-1]
+        }
+
+    def save_tasks(self) -> None:
+        self.connection.commit()
+        self.close_connection_to_db()
+
+    def delete_task(self, description: str) -> None:
+        cursor = self.connection.cursor()
+        sql = f"DELETE FROM {self.table_name} WHERE description = '{description}'"
+        cursor.execute(sql)
+        self.connection.commit()
+
+    def clear_tasks(self) -> None:
+        cursor = self.connection.cursor()
+        sql = f"DELETE FROM {self.table_name}"
+        cursor.execute(sql)
+        self.connection.commit()
+
+    def set_all_tasks(self, state: bool) -> None:
+        cursor = self.connection.cursor()
+        sql = f"UPDATE {self.table_name} SET done = {state}"
+        cursor.execute(sql)
+        self.connection.commit()
+
+    # Cloud methods
+    def create_table(self) -> None:
+        cursor = self.connection.cursor()
+
+        sql = f'''CREATE TABLE IF NOT EXISTS {self.table_name} (
+            description VARCHAR (100) UNIQUE NOT NULL, 
+            done BOOLEAN NOT NULL
+            )'''
+        cursor.execute(sql)
+        self.connection.commit()
+
+    def connect_to_db(self) -> None:
+        self.connection = psycopg2.connect(
+            database=self.configurations['database'],
+            user=self.configurations['user'],
+            password=self.configurations['password'],
+            host=self.configurations['host'],
+            port=self.configurations['port']
+        )
+
+        self.connection.commit()
+
+    def close_connection_to_db(self) -> None:   
+        self.connection.close()
+
+class TaskManagerLocal(TaskManager):
 
     def __init__(self):
         self.tasks: pd.DataFrame = pd.read_csv(CSV_DATA_FILE)

@@ -1,1 +1,0 @@
-C:\Users\guilh\code\todo_app\env\Scripts\python.exe C:\Users\guilh\code\todo_app\main.py
