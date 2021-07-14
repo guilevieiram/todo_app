@@ -12,10 +12,13 @@ SECONDARY_COLOR = 'Pink'
 
 class ToDoApp(MDApp):
 
-    def __init__(self):
+    def __init__(self, cloud: bool):
         super().__init__()
+        if cloud:
+            self.task_manager = TaskManagerCloud()
+        else:
+            self.task_manager = TaskManagerCloud()
 
-        self.task_manager = TaskManagerLocal()
         self.screen: Screen
 
     def build(self):
@@ -75,7 +78,7 @@ class ToDoApp(MDApp):
         self.task_manager.show_tasks()
 
 def main() -> None:
-    app = ToDoApp()
+    app = ToDoApp(cloud=True)
     app.run()
     app.exit_and_save()
 
