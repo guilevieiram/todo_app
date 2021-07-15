@@ -12,11 +12,10 @@ SECONDARY_COLOR = 'Pink'
 
 class ToDoApp(MDApp):
 
-    def __init__(self, task_manager: TaskManager):
+    def __init__(self):
         super().__init__()
 
-        self.task_manager = task_manager
-
+        self.task_manager: TaskManager = TaskManagerLocal()
         self.screen: Screen
 
     def build(self):
@@ -61,11 +60,23 @@ class ToDoApp(MDApp):
         self.task_manager.set_all_tasks(state=state)
         self.make_task_list()
 
+    def change_to_local_db(self) -> None:
+        self.task_manager.save_tasks()
+        self.task_manager = TaskManagerLocal()
+        self.make_task_list()
+
+    def change_to_cloud_db(self) -> None:
+        self.task_manager.save_tasks()
+        self.task_manager = TaskManagerCloud()
+        self.make_task_list()
+
     def make_menu_function_list(self) -> None:
         return [
         {'name': 'Clear', 'function': self.clear_tasks},
         {'name': 'Do all', 'function': lambda : self.set_all_tasks(state=True)},
-        {'name': 'Undo all', 'function': lambda : self.set_all_tasks(state=False)}
+        {'name': 'Undo all', 'function': lambda : self.set_all_tasks(state=False)},
+        {'name': 'Local data', 'function': lambda : self.change_to_local_db()},
+        {'name': 'Cloud data', 'function': lambda : self.change_to_cloud_db()}
         ]
 
     def exit_and_save(self) -> None:
@@ -76,7 +87,7 @@ class ToDoApp(MDApp):
         self.task_manager.show_tasks()
 
 def main() -> None:
-    app = ToDoApp(task_manager=TaskManagerCloud())
+    app = ToDoApp()
     app.run()
     app.exit_and_save()
 
