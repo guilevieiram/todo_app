@@ -9,13 +9,23 @@ from task_manager import TaskManagerCloud, TaskManagerLocal, TaskManager
 PRIMARY_COLOR = 'BlueGray'
 SECONDARY_COLOR = 'Pink'
 
+# Data settings
+CLOUD = 1
+LOCAL = 0
+
 
 class ToDoApp(MDApp):
 
-    def __init__(self):
+    def __init__(self, initial_data: int = LOCAL):
         super().__init__()
 
-        self.task_manager: TaskManager = TaskManagerLocal()
+        self.data_type = initial_data
+
+        if initial_data == CLOUD:
+            self.task_manager: TaskManager = TaskManagerCloud()
+        if initial_data == LOCAL:
+            self.task_manager: TaskManager = TaskManagerLocal()
+
         self.screen: Screen
 
     def build(self):
@@ -28,10 +38,12 @@ class ToDoApp(MDApp):
     def initialize_screen(self) -> Screen:  
         screen = Screen()     
         screen.initilize_widgets(
+            data_type=self.data_type,
             add_task_function=self.add_task,
             validate_task_function=self.validate_task,
             delete_task_function=self.delete_task,
             clear_tasks_function=self.clear_tasks,
+            change_db_function=self.change_db,
             menu_functions_list=self.make_menu_function_list()
             )
         return screen
@@ -60,23 +72,29 @@ class ToDoApp(MDApp):
         self.task_manager.set_all_tasks(state=state)
         self.make_task_list()
 
-    def change_to_local_db(self) -> None:
+    def change_db(self) -> int:
         self.task_manager.save_tasks()
-        self.task_manager = TaskManagerLocal()
+
+        if self.data_type == LOCAL:
+            self.data_type = CLOUD
+            self.task_manager = TaskManagerCloud()
+
+        elif self.data_type == CLOUD:
+            self.data_type = LOCAL
+            self.task_manager = TaskManagerLocal()
+
+        else:
+            raise ValueError('Not a valid db instance')
+
         self.make_task_list()
 
-    def change_to_cloud_db(self) -> None:
-        self.task_manager.save_tasks()
-        self.task_manager = TaskManagerCloud()
-        self.make_task_list()
+        return self.data_type
 
     def make_menu_function_list(self) -> None:
         return [
         {'name': 'Clear', 'function': self.clear_tasks},
         {'name': 'Do all', 'function': lambda : self.set_all_tasks(state=True)},
-        {'name': 'Undo all', 'function': lambda : self.set_all_tasks(state=False)},
-        {'name': 'Local data', 'function': lambda : self.change_to_local_db()},
-        {'name': 'Cloud data', 'function': lambda : self.change_to_cloud_db()}
+        {'name': 'Undo all', 'function': lambda : self.set_all_tasks(state=False)}
         ]
 
     def exit_and_save(self) -> None:
@@ -87,7 +105,7 @@ class ToDoApp(MDApp):
         self.task_manager.show_tasks()
 
 def main() -> None:
-    app = ToDoApp()
+    app = ToDoApp(initial_data = LOCAL)
     app.run()
     app.exit_and_save()
 

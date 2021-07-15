@@ -45,6 +45,14 @@ MENU = 'menu'
 
 # Cat
 CAT_TASK = 'Feed the cat'
+CAT = 'cat'
+
+# Data settings
+CLOUD = 1
+CLOUD_ICON = 'cloud'
+LOCAL = 0
+LOCAL_ICON = 'home'
+
 
 class ItemList(ScrollView):
 
@@ -109,6 +117,9 @@ class Screen():
         self.delete_task_function = kwargs['delete_task_function']
         self.clear_tasks_function = kwargs['clear_tasks_function']
         self.menu_functions_list = kwargs['menu_functions_list']
+        self.change_db_function = kwargs['change_db_function']
+
+        self.data_type = kwargs['data_type']
 
         self.create_widgets()
 
@@ -141,7 +152,10 @@ class Screen():
             )
         
         toolbar.left_action_items = [[MENU, lambda x: menu_callback(x)]]
-        toolbar.right_action_items = [['cat', lambda x: self.add_task_function(CAT_TASK)]]
+        toolbar.right_action_items = [
+            [LOCAL_ICON if self.data_type == LOCAL else CLOUD_ICON, lambda x: self.change_db_action()],
+            [CAT, lambda x: self.add_task_function(CAT_TASK)]
+            ]
         return toolbar
 
     def create_logo(self) -> Image:
@@ -196,7 +210,7 @@ class Screen():
 
         return MDDropdownMenu(
             items=self.menu_items,
-            width_mult=4,
+            width_mult=5,
         )
 
     # Screen <-> TaskList interface
@@ -215,6 +229,16 @@ class Screen():
             self.task_list.add_item(text=description, box_icon=icon, delete_icon=DELETE_ICON)
 
         self.task_list.update_list()
+
+    def change_db_action(self) -> None:
+
+        self.data_type = self.change_db_function()
+        self.update_toolbar()
+        
+    def update_toolbar(self) -> None:
+        self.screen.remove_widget(self.toolbar)
+        self.toolbar = self.create_toolbar()
+        self.screen.add_widget(self.toolbar)
 
     def delete_task_list(self) -> None:
         self.task_list.delete_list()
