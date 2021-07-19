@@ -6,11 +6,11 @@ from abc import ABC, abstractmethod
 TABLE_NAME = 'tasks'
 CSV_DATA_FILE = 'data.csv'
 POSTGRESQL_CONFIG = {
-        'user': 'klqyvsofizsjcb',
-        'password': 'b6ef78f91f8e3be4f5861c490efe52d99d6c1c1cb3c472839a90bf73db9704a7',
-        'host': 'ec2-54-157-100-65.compute-1.amazonaws.com',
-        'port': 5432,
-        'database': 'd8pld4q9k569uv'
+        'user': '',
+        'password': '',
+        'host': '',
+        'port': ,
+        'database': 
         }
 
 
